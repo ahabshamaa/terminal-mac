@@ -5,7 +5,7 @@ import Darwin
 
 @MainActor
 enum VirtualMachines {
-    static func configuration(_ machine: Machine, at directory: URL, tools: URL?) throws -> VZVirtualMachineConfiguration {
+    static func configuration(_ machine: Machine, at directory: URL, tools: URL?, apps: URL? = nil) throws -> VZVirtualMachineConfiguration {
         let config = VZVirtualMachineConfiguration()
         config.bootLoader = VZMacOSBootLoader()
         config.cpuCount = machine.cpu
@@ -36,6 +36,8 @@ enum VirtualMachines {
         }
         var shares: [String: VZSharedDirectory] = ["control": VZSharedDirectory(url: directory.appendingPathComponent("exchange"), readOnly: false)]
         if let tools { shares["tools"] = VZSharedDirectory(url: tools, readOnly: true) }
+        // Builds for testing in the guest; read-only, and never the home or a project folder (AppsShare).
+        if let apps { shares[AppsShare.name] = VZSharedDirectory(url: apps, readOnly: true) }
         let filesystem = VZVirtioFileSystemDeviceConfiguration(tag: VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag)
         filesystem.share = VZMultipleDirectoryShare(directories: shares)
         config.directorySharingDevices = [filesystem]
@@ -109,13 +111,13 @@ final class MachineRuntime: NSObject, VZVirtualMachineDelegate, NSWindowDelegate
     var stopping = false
     var stopDeadline: Date?
 
-    init(machine: Machine, directory: URL, tools: URL) throws {
+    init(machine: Machine, directory: URL, tools: URL, apps: URL? = nil) throws {
         self.machine = machine
         lock = open(directory.appendingPathComponent("runtime.lock").path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard lock >= 0 else { throw Failure("Cannot open VM lock") }
         guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { close(lock); throw Failure("VM is already running") }
         mailbox = try Mailbox(directory.appendingPathComponent("host-control"), create: true)
-        vm = VZVirtualMachine(configuration: try VirtualMachines.configuration(machine, at: directory, tools: tools))
+        vm = VZVirtualMachine(configuration: try VirtualMachines.configuration(machine, at: directory, tools: tools, apps: apps))
         super.init()
         vm.delegate = self
     }

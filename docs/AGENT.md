@@ -10,6 +10,15 @@ claude mcp add terminal-mac -- /absolute/path/to/terminal-mac mcp default
 
 If a tool reports that the guest has no logged-in session, ask the user to sign in (`terminal-mac view NAME`, then Ctrl+O).
 
+## Getting an app into the guest (fork addition)
+
+There is no file-import action. Instead, the host folder `~/Developer/terminal-mac-apps` is shared **read-only** with the guest as `/Volumes/My Shared Files/apps`, next to `tools`:
+
+1. On the host, copy the build into `~/Developer/terminal-mac-apps/` (for example `ditto MyApp.app ~/Developer/terminal-mac-apps/MyApp.app`).
+2. In the guest, open it from Finder → `/Volumes/My Shared Files/apps`, or copy it to the guest's `/Applications` first if the app must write next to itself.
+
+The share is attached when the VM starts, so create the folder before `terminal-mac start`; a running VM needs one shutdown and start to pick it up. Files added later appear in the guest immediately. `TERMINAL_MAC_APPS=/path` selects another folder. The VM refuses to start if that folder is the home folder, contains it, or is a git work tree, so the guest never sees your home or project folders.
+
 ## CLI and full instructions
 
 The complete agent guide is the skill at [skills/terminal-mac/SKILL.md](../skills/terminal-mac/SKILL.md), which also ships inside the app (`terminal-mac skills get`). The CLI notes below are kept for reference.

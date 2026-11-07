@@ -159,7 +159,7 @@ An interrupted or failed installation leaves its directory and `installed: false
 ## Isolation model
 
 - Host input and screen APIs are not used for agent actions. The helper refuses to run unless `hw.model` starts with `VirtualMac`. That check prevents accidental host execution; it is not hardware attestation or a defense against a compromised host.
-- The guest sees two explicit shares: `control` (read/write, containing request/reply JSON and screenshots) and `tools` (read-only helper app). Host home, project folders, clipboard, microphone, and camera are not attached.
+- The guest sees two explicit shares: `control` (read/write, containing request/reply JSON and screenshots) and `tools` (read-only helper app), plus, in this fork, an optional read-only `apps` share from `~/Developer/terminal-mac-apps` when that folder exists (see [docs/AGENT.md](docs/AGENT.md)). Host home, project folders, clipboard, microphone, and camera are not attached.
 - There is no remote-control network listener. The flat mailbox pins its directory, rejects symlinks, hardlinks and nonregular files on reads, bounds message sizes, checks request IDs, and expires pending actions. The host never executes guest-provided content.
 - Default NAT networking permits guest internet access and may reach services on the host or local network. This is **not** a network-isolated or hardened hostile-code environment. `--offline` removes that network path.
 - A logged-out/locked guest, missing helper, denied guest permissions, or paused VM prevents normal computer use. TCC grants are interactive guest setup, not bypassed by the CLI.

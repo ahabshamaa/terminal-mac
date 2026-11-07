@@ -90,7 +90,9 @@ final class CLI {
             let name = try args.machineName()
             let machine = try store.load(name)
             guard machine.installed else { throw Failure("VM installation is incomplete") }
-            runtime = try MachineRuntime(machine: machine, directory: store.directory(name), tools: toolsURL)
+            let apps = try AppsShare.resolve(environment: ProcessInfo.processInfo.environment, home: FileManager.default.homeDirectoryForCurrentUser)
+            if let apps { stderr("Sharing \(apps.path) read-only as /Volumes/My Shared Files/\(AppsShare.name).") }
+            runtime = try MachineRuntime(machine: machine, directory: store.directory(name), tools: toolsURL, apps: apps)
             try await runtime!.start(show: args.flags.contains("window"))
             // Keep the app event loop and runtime alive until guest shutdown.
             while true { try await Task.sleep(nanoseconds: 1_000_000_000) }
@@ -273,6 +275,8 @@ final class CLI {
     Actions require TerminalMacGuest.app running inside the logged-in guest.
     Screen Recording and Accessibility are granted inside the guest only.
     TERMINAL_MAC_HOME overrides the host data directory.
+    ~/Developer/terminal-mac-apps, if it exists, is shared read-only with the guest as
+    /Volumes/My Shared Files/apps (TERMINAL_MAC_APPS overrides; never home or a git folder).
     """
 }
 
